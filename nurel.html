@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Квитанция — учёт заработка</title>
-<!-- Firebase SDK -->
+<!-- Firebase SDK (Compat) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
-  /* ===== Все стили те же ===== */
+  /* ===== Все стили ===== */
   :root{
     --paper: #F6F1E6;
     --paper-dark: #EDE4D2;
@@ -187,14 +187,6 @@
   }
   .add-btn:active{ transform: scale(0.98); }
   .add-btn:disabled{ opacity: 0.4; }
-  .big-money{
-    font-size: 34px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.5px;
-    color: var(--teal-dark);
-  }
-  .big-money small{ font-size: 15px; font-weight:600; color: var(--ink-soft); }
   .motivation{
     background: linear-gradient(160deg, #FBF0DA, #F6E4C2);
     border: 1px solid #ECD6A8;
@@ -206,22 +198,6 @@
   }
   .motivation .delta-up{ color: #1F6F6B; font-weight: 800; }
   .motivation .delta-down{ color: var(--plum); font-weight: 800; }
-  .versus{
-    display:flex; align-items:center; gap: 10px;
-    margin-bottom: 14px;
-  }
-  .versus .side{
-    flex:1;
-    background: var(--paper);
-    border:1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px;
-    text-align:center;
-  }
-  .versus .side.lead{ border-color: var(--gold); background:#FBF0DA; }
-  .versus .name{ font-size: 12px; color: var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;}
-  .versus .amt{ font-size: 20px; font-weight:800; margin-top:4px; }
-  .versus .vs{ font-size: 12px; color: var(--ink-soft); font-weight:700; }
   .entry-list{ margin-bottom: 4px; }
   .entry-item{
     display:flex; justify-content:space-between; align-items:center;
@@ -344,7 +320,6 @@
     <div class="perforation"><div class="dash"></div></div>
 
     <div class="body">
-      <!-- Статус синхронизации -->
       <div class="sync-status" id="syncStatus">🔄 Синхронизация...</div>
 
       <div class="tabs">
@@ -354,16 +329,13 @@
 
       <!-- ===== TAB 1: TODAY ===== -->
       <div class="panel active" id="panel-today">
-
         <div class="date-nav">
           <button class="nav-arrow" id="prevDayBtn">◀</button>
           <div class="date-label" id="dateLabel">Сегодня</div>
           <button class="nav-arrow" id="nextDayBtn">▶</button>
         </div>
         <button class="link-btn" id="jumpTodayBtn" style="display:none;">↩ Вернуться к сегодняшнему дню</button>
-
         <button class="payday-btn" id="resetDayBtn" style="border-color:var(--plum); color:var(--plum); margin-bottom:14px;">🔄 Сбросить этот день</button>
-
         <div class="motivation" id="motivationBox">Загрузка…</div>
 
         <div class="card">
@@ -382,7 +354,6 @@
             <button class="person-btn active" id="btnMe" data-person="me">Я</button>
             <button class="person-btn" id="btnNuru" data-person="nuru">Нуру</button>
           </div>
-
           <div class="stepper-row">
             <div class="stepper-label">Шорты / футболки / спортивки<b>2 сом за штуку</b></div>
             <div class="stepper">
@@ -399,7 +370,6 @@
               <button data-step="bombers" data-dir="1">+</button>
             </div>
           </div>
-
           <button class="add-btn" id="addBtn" disabled>Добавить запись — 0 сом</button>
         </div>
 
@@ -407,12 +377,10 @@
           <h3 id="entryListTitle">Записи</h3>
           <div class="entry-list" id="entryList"></div>
         </div>
-
       </div>
 
       <!-- ===== TAB 2: STATS ===== -->
       <div class="panel" id="panel-stats">
-
         <div class="card">
           <h3>Зарплата и прогноз</h3>
           <div class="muted" style="margin-bottom:8px;">Точная дата следующей зарплаты неизвестна — ниже только оценка по вашей прошлой истории.</div>
@@ -420,18 +388,15 @@
           <div class="chips" id="paydayChips"></div>
           <button class="payday-btn" id="markPaydayBtn">Отметить: зарплату получили сегодня</button>
         </div>
-
         <div class="card">
           <h3>Рекорд периода</h3>
           <div id="recordInfo" class="muted">Загрузка…</div>
           <div class="progress-outer"><div class="progress-inner" id="recordBar" style="width:0%"></div></div>
         </div>
-
         <div class="card">
           <h3>Всего заработано (за всё время)</h3>
           <div id="allTimeBox"></div>
         </div>
-
         <div class="card">
           <h3>Резервная копия</h3>
           <div class="muted" style="margin-bottom:8px;">На всякий случай — скачайте копию данных себе на телефон.</div>
@@ -441,7 +406,6 @@
             <input type="file" id="importInput" accept="application/json" style="display:none;">
           </label>
         </div>
-
       </div>
 
     </div>
@@ -455,7 +419,7 @@
 
 <script>
 // ================================================================
-// 1. КОНФИГУРАЦИЯ FIREBASE (ТВОИ ДАННЫЕ)
+// 1. КОНФИГУРАЦИЯ FIREBASE
 // ================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyArlDW24o6YzC7BsWM2TeVlmyACIDXB8rw",
@@ -468,45 +432,45 @@ const firebaseConfig = {
 };
 
 // ================================================================
-// 2. ПОДКЛЮЧЕНИЕ К FIREBASE
+// 2. ИНИЦИАЛИЗАЦИЯ FIREBASE
 // ================================================================
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Включаем офлайн-режим (данные будут доступны даже без интернета)
-db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+// Включаем офлайн-режим
+db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
   console.warn('Офлайн-режим не включён:', err);
 });
 
 // ================================================================
-// 3. КОНСТАНТЫ
+// 3. КОНСТАНТЫ И ПЕРЕМЕННЫЕ
 // ================================================================
 const PRICE2 = 2, PRICE4 = 4;
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const ENTRIES_COLLECTION = 'entries';
+const PAYDAYS_COLLECTION = 'paydays';
 
 let entries = [];
 let paydays = [];
 let counts = { items2: 0, bombers: 0 };
 let currentPerson = 'me';
 let selectedDate = null;
-let isSyncing = false;
-let syncTimeout = null;
 
 // ================================================================
 // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ================================================================
 function todayStr() {
-  const d = new Date();
+  var d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 selectedDate = todayStr();
 
 function parseYMD(s) {
-  const [y,m,d] = s.split('-').map(Number);
-  return new Date(y, m-1, d);
+  var parts = s.split('-').map(Number);
+  return new Date(parts[0], parts[1]-1, parts[2]);
 }
 function addDays(dateObj, n) {
-  const d = new Date(dateObj);
+  var d = new Date(dateObj);
   d.setDate(d.getDate()+n);
   return d;
 }
@@ -519,158 +483,168 @@ function daysBetween(a, b) {
 function fmt(n) { return Math.round(n).toLocaleString('ru-RU'); }
 
 function formatDateLabel(dateStr) {
-  const diff = daysBetween(dateStr, todayStr());
+  var diff = daysBetween(dateStr, todayStr());
   if(diff === 0) return 'Сегодня';
   if(diff === 1) return 'Вчера';
   if(diff === -1) return 'Завтра';
-  const d = parseYMD(dateStr);
+  var d = parseYMD(dateStr);
   return d.getDate()+' '+MONTHS[d.getMonth()];
 }
 function dayPhrase(dateStr) {
-  const label = formatDateLabel(dateStr);
+  var label = formatDateLabel(dateStr);
   return (label==='Сегодня'||label==='Вчера'||label==='Завтра') ? label : ('За '+label);
 }
 
-// ================================================================
-// 5. СИНХРОНИЗАЦИЯ С FIREBASE
-// ================================================================
-const ENTRIES_COLLECTION = 'entries';
-const PAYDAYS_COLLECTION = 'paydays';
-
-function setSyncStatus(text, isError = false) {
-  const el = document.getElementById('syncStatus');
+function setSyncStatus(text, isError) {
+  var el = document.getElementById('syncStatus');
   el.textContent = text;
   el.className = 'sync-status' + (isError ? ' error' : '');
 }
 
-// Загрузка всех данных из Firebase
-async function loadFromFirebase() {
-  try {
-    setSyncStatus('🔄 Загрузка данных...');
-    
-    const entriesSnapshot = await db.collection(ENTRIES_COLLECTION).orderBy('ts', 'desc').get();
+// ================================================================
+// 5. РАБОТА С FIREBASE
+// ================================================================
+function loadFromFirebase() {
+  setSyncStatus('🔄 Загрузка данных...', false);
+  
+  // Загружаем записи
+  db.collection(ENTRIES_COLLECTION).orderBy('ts', 'desc').get().then(function(querySnapshot) {
     entries = [];
-    entriesSnapshot.forEach(doc => {
-      entries.push({ id: doc.id, ...doc.data() });
+    querySnapshot.forEach(function(doc) {
+      var data = doc.data();
+      data.id = doc.id;
+      entries.push(data);
     });
     
-    const paydaysSnapshot = await db.collection(PAYDAYS_COLLECTION).orderBy('ts', 'desc').get();
-    paydays = [];
-    paydaysSnapshot.forEach(doc => {
-      paydays.push({ id: doc.id, ...doc.data() });
+    // Загружаем зарплаты
+    db.collection(PAYDAYS_COLLECTION).orderBy('ts', 'desc').get().then(function(querySnapshot2) {
+      paydays = [];
+      querySnapshot2.forEach(function(doc) {
+        var data = doc.data();
+        data.id = doc.id;
+        paydays.push(data);
+      });
+      
+      setSyncStatus('✅ Данные загружены', false);
+      renderToday();
+      renderStats();
+      updateAddBtn();
+    }).catch(function(err) {
+      console.error('Ошибка загрузки зарплат:', err);
+      setSyncStatus('❌ Ошибка: ' + err.message, true);
     });
-    
-    setSyncStatus('✅ Данные загружены');
-    return true;
-  } catch (e) {
-    console.error('Ошибка загрузки:', e);
-    setSyncStatus('❌ Ошибка загрузки: ' + e.message, true);
-    return false;
-  }
+  }).catch(function(err) {
+    console.error('Ошибка загрузки записей:', err);
+    setSyncStatus('❌ Ошибка: ' + err.message, true);
+  });
 }
 
-// Сохранение записи в Firebase
-async function saveEntryToFirebase(entry) {
-  try {
-    await db.collection(ENTRIES_COLLECTION).doc(entry.id).set(entry);
-    return true;
-  } catch (e) {
-    console.error('Ошибка сохранения:', e);
-    return false;
-  }
+function saveEntryToFirebase(entry) {
+  return db.collection(ENTRIES_COLLECTION).doc(entry.id).set(entry);
 }
 
-// Удаление записи из Firebase
-async function deleteEntryFromFirebase(id) {
-  try {
-    await db.collection(ENTRIES_COLLECTION).doc(id).delete();
-    return true;
-  } catch (e) {
-    console.error('Ошибка удаления:', e);
-    return false;
-  }
+function deleteEntryFromFirebase(id) {
+  return db.collection(ENTRIES_COLLECTION).doc(id).delete();
 }
 
-// Сохранение зарплаты в Firebase
-async function savePaydayToFirebase(payday) {
-  try {
-    await db.collection(PAYDAYS_COLLECTION).doc(payday.id).set(payday);
-    return true;
-  } catch (e) {
-    console.error('Ошибка сохранения зарплаты:', e);
-    return false;
-  }
+function savePaydayToFirebase(payday) {
+  return db.collection(PAYDAYS_COLLECTION).doc(payday.id).set(payday);
 }
 
 // ================================================================
 // 6. ОСНОВНЫЕ ФУНКЦИИ
 // ================================================================
 function updateAddBtn() {
-  const sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
-  const btn = document.getElementById('addBtn');
+  var sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
+  var btn = document.getElementById('addBtn');
   btn.textContent = 'Добавить запись — ' + fmt(sum) + ' сом';
   btn.disabled = sum === 0;
 }
 
 function sumFor(person, date) {
-  return entries.filter(e => (person ? e.person === person : true) && e.date === date)
-                .reduce((a,e) => a + e.sum, 0);
+  var total = 0;
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    if ((person ? e.person === person : true) && e.date === date) {
+      total += e.sum;
+    }
+  }
+  return total;
 }
 
 function allDatesSorted() {
-  return [...new Set(entries.map(e => e.date))].sort();
+  var dates = [];
+  for (var i = 0; i < entries.length; i++) {
+    if (dates.indexOf(entries[i].date) === -1) {
+      dates.push(entries[i].date);
+    }
+  }
+  dates.sort();
+  return dates;
 }
 
 function periodSum(p, person) {
-  return entries.filter(e => e.date >= p.start && e.date <= p.end && (person ? e.person === person : true))
-                .reduce((a,e) => a + e.sum, 0);
+  var total = 0;
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    if (e.date >= p.start && e.date <= p.end && (person ? e.person === person : true)) {
+      total += e.sum;
+    }
+  }
+  return total;
 }
 
 function computePeriodsData() {
-  const sortedPaydays = [...paydays].sort((a,b) => a.date.localeCompare(b.date));
-  const allDates = allDatesSorted();
-  const trackingStart = allDates[0] || todayStr();
-  const boundaries = sortedPaydays.map(p => p.date);
-  const periods = [];
-  let cursor = trackingStart;
-  boundaries.forEach(b => {
-    periods.push({start: cursor, end: b, completed: true});
-    cursor = toYMD(addDays(parseYMD(b), 1));
-  });
-  const todayD = todayStr();
+  var sortedPaydays = paydays.slice().sort(function(a,b) { return a.date.localeCompare(b.date); });
+  var allDates = allDatesSorted();
+  var trackingStart = allDates[0] || todayStr();
+  var boundaries = [];
+  for (var i = 0; i < sortedPaydays.length; i++) {
+    boundaries.push(sortedPaydays[i].date);
+  }
+  var periods = [];
+  var cursor = trackingStart;
+  for (var j = 0; j < boundaries.length; j++) {
+    periods.push({start: cursor, end: boundaries[j], completed: true});
+    cursor = toYMD(addDays(parseYMD(boundaries[j]), 1));
+  }
+  var todayD = todayStr();
   if (daysBetween(cursor, todayD) >= 0) {
     periods.push({start: cursor, end: todayD, completed: false});
   }
-  const current = periods.length ? periods[periods.length-1] : null;
-  return { sortedPaydays, periods, current, trackingStart };
+  var current = periods.length ? periods[periods.length-1] : null;
+  return { sortedPaydays: sortedPaydays, periods: periods, current: current, trackingStart: trackingStart };
 }
 
 // ================================================================
 // 7. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
 // ================================================================
 function renderToday() {
-  const day = selectedDate;
-  const realToday = todayStr();
+  var day = selectedDate;
+  var realToday = todayStr();
 
   document.getElementById('dateLabel').textContent = formatDateLabel(day);
   document.getElementById('jumpTodayBtn').style.display = (day === realToday) ? 'none' : 'block';
   document.getElementById('entryListTitle').textContent = 'Записи — ' + formatDateLabel(day).toLowerCase();
   document.getElementById('splitTitle').textContent = 'Заработано ' + (formatDateLabel(day)==='Сегодня' ? 'сегодня' : formatDateLabel(day)==='Вчера' ? 'вчера' : ('за ' + formatDateLabel(day))) + ' — отдельно';
 
-  const dates = allDatesSorted();
-  const earlierDates = dates.filter(d => d < day);
-  const prevDate = earlierDates.length ? earlierDates[earlierDates.length-1] : null;
+  var dates = allDatesSorted();
+  var earlierDates = [];
+  for (var i = 0; i < dates.length; i++) {
+    if (dates[i] < day) earlierDates.push(dates[i]);
+  }
+  var prevDate = earlierDates.length ? earlierDates[earlierDates.length-1] : null;
 
-  const totalDay = sumFor(null, day);
-  const totalPrev = prevDate ? sumFor(null, prevDate) : 0;
+  var totalDay = sumFor(null, day);
+  var totalPrev = prevDate ? sumFor(null, prevDate) : 0;
 
-  const motBox = document.getElementById('motivationBox');
+  var motBox = document.getElementById('motivationBox');
   if (totalDay === 0 && !prevDate) {
     motBox.innerHTML = '👋 Добавьте первую запись — отсюда начнётся история заработка.';
   } else if (!prevDate) {
     motBox.innerHTML = '🔥 '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b>. Это первая запись в истории — задайте планку!';
   } else {
-    const diff = totalDay - totalPrev;
+    var diff = totalDay - totalPrev;
     if (diff > 0) {
       motBox.innerHTML = '🚀 '+dayPhrase(day)+' заработано <span class="delta-up">'+fmt(totalDay)+' сом</span> — это на <span class="delta-up">'+fmt(diff)+' сом</span> больше, чем в прошлый рабочий день ('+fmt(totalPrev)+' сом). Так держать!';
     } else if (diff < 0) {
@@ -680,16 +654,17 @@ function renderToday() {
     }
   }
 
-  const meDay = sumFor('me', day);
-  const nuruDay = sumFor('nuru', day);
+  var meDay = sumFor('me', day);
+  var nuruDay = sumFor('nuru', day);
   document.getElementById('splitDayBox').innerHTML =
     '<div class="col"><div class="who">Я</div><div class="amt">'+fmt(meDay)+' сом</div></div>'+
     '<div class="col"><div class="who">Нуру</div><div class="amt">'+fmt(nuruDay)+' сом</div></div>';
 
-  const { current } = computePeriodsData();
-  const untilPayday = current ? periodSum(current) : 0;
-  const meP = current ? periodSum(current,'me') : 0;
-  const nuruP = current ? periodSum(current,'nuru') : 0;
+  var periodData = computePeriodsData();
+  var current = periodData.current;
+  var untilPayday = current ? periodSum(current) : 0;
+  var meP = current ? periodSum(current,'me') : 0;
+  var nuruP = current ? periodSum(current,'nuru') : 0;
   document.getElementById('summaryBox').innerHTML =
     '<div class="row-between"><span>Всего с '+(current?current.start:day)+'</span><b>'+fmt(untilPayday)+' сом</b></div>'+
     '<div class="split-two" style="margin-top:8px;">'+
@@ -698,50 +673,68 @@ function renderToday() {
     '</div>'+
     '<div class="muted" style="margin-top:8px;">Дата следующей зарплаты неизвестна — прогноз смотрите во вкладке «Статистика».</div>';
 
-  const list = document.getElementById('entryList');
-  const dayEntries = entries.filter(e => e.date === day).sort((a,b) => b.ts - a.ts);
+  var list = document.getElementById('entryList');
+  var dayEntries = [];
+  for (var k = 0; k < entries.length; k++) {
+    if (entries[k].date === day) dayEntries.push(entries[k]);
+  }
+  dayEntries.sort(function(a,b) { return b.ts - a.ts; });
+  
   if (dayEntries.length === 0) {
     list.innerHTML = '<div class="empty-hint">Записей ещё нет</div>';
   } else {
-    list.innerHTML = dayEntries.map(e => {
-      const parts = [];
+    var html = '';
+    for (var m = 0; m < dayEntries.length; m++) {
+      var e = dayEntries[m];
+      var parts = [];
       if (e.items2) parts.push(e.items2+'× вещь (2 сом)');
       if (e.bombers) parts.push(e.bombers+'× бомбер (4 сом)');
-      const who = e.person === 'me' ? 'Я' : 'Нуру';
-      return '<div class="entry-item">'+
+      var who = e.person === 'me' ? 'Я' : 'Нуру';
+      html += '<div class="entry-item">'+
         '<div><span class="who">'+who+'</span> <span class="desc">— '+parts.join(', ')+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:6px;"><span class="sum">'+fmt(e.sum)+' сом</span>'+
         '<button class="del" data-id="'+e.id+'">×</button></div>'+
       '</div>';
-    }).join('');
-    list.querySelectorAll('.del').forEach(b => {
-      b.addEventListener('click', () => deleteEntry(b.dataset.id));
-    });
+    }
+    list.innerHTML = html;
+    var delButtons = list.querySelectorAll('.del');
+    for (var n = 0; n < delButtons.length; n++) {
+      delButtons[n].addEventListener('click', function() {
+        deleteEntry(this.dataset.id);
+      });
+    }
   }
 }
 
 function renderStats() {
-  const sortedPaydays = [...paydays].sort((a,b) => a.date.localeCompare(b.date));
-  const intervals = [];
-  for (let i = 1; i < sortedPaydays.length; i++) {
+  var sortedPaydays = paydays.slice().sort(function(a,b) { return a.date.localeCompare(b.date); });
+  var intervals = [];
+  for (var i = 1; i < sortedPaydays.length; i++) {
     intervals.push(daysBetween(sortedPaydays[i-1].date, sortedPaydays[i].date));
   }
-  const chips = document.getElementById('paydayChips');
-  chips.innerHTML = intervals.map(d => '<div class="chip">'+d+' дн.</div>').join('') || '';
+  var chips = document.getElementById('paydayChips');
+  var chipsHtml = '';
+  for (var j = 0; j < intervals.length; j++) {
+    chipsHtml += '<div class="chip">'+intervals[j]+' дн.</div>';
+  }
+  chips.innerHTML = chipsHtml;
 
-  const info = document.getElementById('paydayInfo');
-  const allDates = allDatesSorted();
-  const trackingStart = allDates[0] || todayStr();
-  const lastPayday = sortedPaydays.length ? sortedPaydays[sortedPaydays.length-1].date : null;
-  const cycleStart = lastPayday || trackingStart;
-  const daysSince = daysBetween(cycleStart, todayStr());
+  var info = document.getElementById('paydayInfo');
+  var allDates = allDatesSorted();
+  var trackingStart = allDates[0] || todayStr();
+  var lastPayday = sortedPaydays.length ? sortedPaydays[sortedPaydays.length-1].date : null;
+  var cycleStart = lastPayday || trackingStart;
+  var daysSince = daysBetween(cycleStart, todayStr());
 
   if (intervals.length === 0) {
     info.innerHTML = 'Пока недостаточно данных для прогноза. Отметьте зарплату хотя бы дважды, чтобы узнать средний срок.<br>Сегодня день <b>'+(daysSince+1)+'</b> с начала текущего периода.';
   } else {
-    const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
-    const minI = Math.min(...intervals), maxI = Math.max(...intervals);
-    let prob;
+    var sum = 0;
+    for (var k = 0; k < intervals.length; k++) sum += intervals[k];
+    var avg = sum / intervals.length;
+    var minI = Math.min.apply(null, intervals);
+    var maxI = Math.max.apply(null, intervals);
+    var prob;
     if (daysSince < minI) prob = 5;
     else if (daysSince > maxI) prob = 97;
     else prob = Math.round(((daysSince - minI + 1) / (maxI - minI + 1)) * 90) + 5;
@@ -750,4 +743,259 @@ function renderStats() {
       'Оценочная вероятность, что зарплата скоро: <b>'+prob+'%</b>';
   }
 
-  const { periods, current
+  var periodData = computePeriodsData();
+  var periods = periodData.periods;
+  var current = periodData.current;
+  var completedSums = [];
+  for (var p = 0; p < periods.length; p++) {
+    if (periods[p].completed) {
+      completedSums.push(periodSum(periods[p]));
+    }
+  }
+  var record = completedSums.length ? Math.max.apply(null, completedSums) : 0;
+  var currentSum = current ? periodSum(current) : 0;
+
+  var recInfo = document.getElementById('recordInfo');
+  var recBar = document.getElementById('recordBar');
+  if (completedSums.length === 0) {
+    recInfo.innerHTML = 'Текущий период (с '+ (current?current.start:trackingStart) +'): <b>'+fmt(currentSum)+' сом</b>. Рекорд появится после первой отмеченной зарплаты.';
+    recBar.style.width = '0%';
+  } else {
+    var pct = record>0 ? Math.min(100, Math.round(currentSum/record*100)) : 0;
+    var extra = '';
+    if (currentSum > record) extra = ' 🏆 Новый рекорд!';
+    var meP = current ? periodSum(current,'me') : 0;
+    var nuruP = current ? periodSum(current,'nuru') : 0;
+    recInfo.innerHTML = 'Рекорд периода: <b>'+fmt(record)+' сом</b>.<br>Текущий период: <b>'+fmt(currentSum)+' сом</b> ('+pct+'% от рекорда)'+extra+
+      '<br><span class="muted">Я: '+fmt(meP)+' сом · Нуру: '+fmt(nuruP)+' сом</span>';
+    recBar.style.width = pct+'%';
+  }
+
+  var meAll = 0, nuruAll = 0;
+  for (var q = 0; q < entries.length; q++) {
+    if (entries[q].person === 'me') meAll += entries[q].sum;
+    else if (entries[q].person === 'nuru') nuruAll += entries[q].sum;
+  }
+  var maxAll = Math.max(meAll, nuruAll, 1);
+  document.getElementById('allTimeBox').innerHTML =
+    '<div class="row-between"><span>Я</span><b>'+fmt(meAll)+' сом</b></div>'+
+    '<div class="progress-outer"><div class="progress-inner" style="width:'+(meAll/maxAll*100)+'%"></div></div>'+
+    '<div class="row-between" style="margin-top:10px;"><span>Нуру</span><b>'+fmt(nuruAll)+' сом</b></div>'+
+    '<div class="progress-outer"><div class="progress-inner" style="width:'+(nuruAll/maxAll*100)+'%"></div></div>';
+}
+
+// ================================================================
+// 8. ОБРАБОТЧИКИ СОБЫТИЙ
+// ================================================================
+
+// Переключение вкладок
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'stats') renderStats();
+  });
+});
+
+// Переключение человека
+document.getElementById('btnMe').addEventListener('click', function() { selectPerson('me'); });
+document.getElementById('btnNuru').addEventListener('click', function() { selectPerson('nuru'); });
+function selectPerson(p) {
+  currentPerson = p;
+  document.getElementById('btnMe').classList.toggle('active', p==='me');
+  document.getElementById('btnNuru').classList.toggle('active', p==='nuru');
+}
+
+// Навигация по дням
+document.getElementById('prevDayBtn').addEventListener('click', function() {
+  selectedDate = toYMD(addDays(parseYMD(selectedDate), -1));
+  renderToday();
+});
+document.getElementById('nextDayBtn').addEventListener('click', function() {
+  selectedDate = toYMD(addDays(parseYMD(selectedDate), 1));
+  renderToday();
+});
+document.getElementById('jumpTodayBtn').addEventListener('click', function() {
+  selectedDate = todayStr();
+  renderToday();
+});
+
+// Степперы
+document.querySelectorAll('.stepper button').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var key = btn.dataset.step;
+    var dir = parseInt(btn.dataset.dir, 10);
+    counts[key] = Math.max(0, counts[key] + dir);
+    document.getElementById('cnt-'+key).textContent = counts[key];
+    updateAddBtn();
+  });
+});
+
+// Добавление записи
+document.getElementById('addBtn').addEventListener('click', function() {
+  var sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
+  if (sum === 0) return;
+  var entry = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+    person: currentPerson,
+    date: selectedDate,
+    items2: counts.items2,
+    bombers: counts.bombers,
+    sum: sum,
+    ts: Date.now()
+  };
+  counts = {items2:0, bombers:0};
+  document.getElementById('cnt-items2').textContent = 0;
+  document.getElementById('cnt-bombers').textContent = 0;
+  updateAddBtn();
+  
+  setSyncStatus('🔄 Сохранение...', false);
+  saveEntryToFirebase(entry).then(function() {
+    entries.push(entry);
+    setSyncStatus('✅ Сохранено', false);
+    renderToday();
+    renderStats();
+  }).catch(function(err) {
+    console.error('Ошибка сохранения:', err);
+    setSyncStatus('❌ Ошибка: ' + err.message, true);
+  });
+});
+
+// Удаление записи
+function deleteEntry(id) {
+  if (!confirm('Удалить эту запись?')) return;
+  setSyncStatus('🔄 Удаление...', false);
+  deleteEntryFromFirebase(id).then(function() {
+    entries = entries.filter(function(e) { return e.id !== id; });
+    setSyncStatus('✅ Удалено', false);
+    renderToday();
+    renderStats();
+  }).catch(function(err) {
+    console.error('Ошибка удаления:', err);
+    setSyncStatus('❌ Ошибка: ' + err.message, true);
+  });
+}
+
+// Сброс дня
+document.getElementById('resetDayBtn').addEventListener('click', function() {
+  var day = selectedDate;
+  var dayEntries = entries.filter(function(e) { return e.date === day; });
+  if (dayEntries.length === 0) {
+    selectedDate = toYMD(addDays(parseYMD(day), 1));
+    renderToday();
+    return;
+  }
+  if (!confirm('Удалить все записи за '+formatDateLabel(day)+'? Это нельзя отменить.')) return;
+  setSyncStatus('🔄 Сброс...', false);
+  var promises = dayEntries.map(function(e) { return deleteEntryFromFirebase(e.id); });
+  Promise.all(promises).then(function() {
+    entries = entries.filter(function(e) { return e.date !== day; });
+    selectedDate = toYMD(addDays(parseYMD(day), 1));
+    setSyncStatus('✅ Сброшено', false);
+    renderToday();
+    renderStats();
+  }).catch(function(err) {
+    console.error('Ошибка сброса:', err);
+    setSyncStatus('❌ Ошибка: ' + err.message, true);
+  });
+});
+
+// Отметить зарплату
+document.getElementById('markPaydayBtn').addEventListener('click', function() {
+  var today = todayStr();
+  if (paydays.some(function(p) { return p.date === today; })) {
+    renderStats();
+    return;
+  }
+  var payday = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+    date: today,
+    ts: Date.now()
+  };
+  setSyncStatus('🔄 Сохранение зарплаты...', false);
+  savePaydayToFirebase(payday).then(function() {
+    paydays.push(payday);
+    setSyncStatus('✅ Зарплата отмечена', false);
+    renderStats();
+  }).catch(function(err) {
+    console.error('Ошибка:', err);
+    setSyncStatus('❌ Ошибка: ' + err.message, true);
+  });
+});
+
+// Экспорт
+document.getElementById('exportBtn').addEventListener('click', function() {
+  var payload = { entries: entries, paydays: paydays, exportedAt: new Date().toISOString() };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'zarabotok-backup-'+todayStr()+'.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// Импорт
+document.getElementById('importInput').addEventListener('change', function(ev) {
+  var file = ev.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var data = JSON.parse(reader.result);
+      if (!Array.isArray(data.entries) || !Array.isArray(data.paydays)) {
+        alert('Файл не похож на резервную копию этого трекера.');
+        return;
+      }
+      if (!confirm('Заменить текущие данные содержимым файла? Текущие записи будут перезаписаны.')) return;
+      setSyncStatus('🔄 Восстановление...', false);
+      
+      // Сначала удаляем все старые данные
+      var deletePromises = [];
+      entries.forEach(function(e) {
+        deletePromises.push(deleteEntryFromFirebase(e.id));
+      });
+      paydays.forEach(function(p) {
+        deletePromises.push(db.collection(PAYDAYS_COLLECTION).doc(p.id).delete());
+      });
+      
+      Promise.all(deletePromises).then(function() {
+        // Сохраняем новые данные
+        var savePromises = [];
+        data.entries.forEach(function(e) {
+          savePromises.push(db.collection(ENTRIES_COLLECTION).doc(e.id).set(e));
+        });
+        data.paydays.forEach(function(p) {
+          savePromises.push(db.collection(PAYDAYS_COLLECTION).doc(p.id).set(p));
+        });
+        return Promise.all(savePromises);
+      }).then(function() {
+        entries = data.entries;
+        paydays = data.paydays;
+        setSyncStatus('✅ Восстановлено', false);
+        renderToday();
+        renderStats();
+        alert('Данные восстановлены.');
+      }).catch(function(err) {
+        console.error('Ошибка восстановления:', err);
+        setSyncStatus('❌ Ошибка: ' + err.message, true);
+      });
+    } catch(e) {
+      alert('Не получилось прочитать файл: ' + e.message);
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ================================================================
+// 9. ЗАПУСК
+// ================================================================
+loadFromFirebase();
+</script>
+</body>
+</html>
