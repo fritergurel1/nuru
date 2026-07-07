@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Квитанция — учёт заработка</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
+  /* ===== Все стили те же ===== */
   :root{
     --paper: #F6F1E6;
     --paper-dark: #EDE4D2;
@@ -31,8 +35,6 @@
     padding: 20px 12px 60px;
   }
   .wrap{ max-width: 480px; margin: 0 auto; }
-
-  /* ---- Ticket header ---- */
   .ticket{
     background: var(--white);
     border-radius: var(--radius);
@@ -63,8 +65,6 @@
     font-size: 13px;
     opacity: 0.85;
   }
-
-  /* perforation notch strip between header and body */
   .perforation{
     position: relative;
     height: 14px;
@@ -85,10 +85,7 @@
     height:0;
     border-top: 2px dashed rgba(255,255,255,0.35);
   }
-
   .body{ padding: 18px 18px 8px; }
-
-  /* ---- Tabs ---- */
   .tabs{
     display:flex;
     gap: 8px;
@@ -112,11 +109,8 @@
     border-color: var(--teal);
     color: var(--white);
   }
-
   .panel{ display:none; }
   .panel.active{ display:block; }
-
-  /* ---- Person switch ---- */
   .person-row{
     display:flex; gap:8px; margin-bottom: 14px;
   }
@@ -136,8 +130,6 @@
     background: #FBF0DA;
     color: var(--teal-dark);
   }
-
-  /* ---- Card ---- */
   .card{
     background: var(--paper);
     border: 1px solid var(--line);
@@ -153,8 +145,6 @@
     color: var(--ink-soft);
     font-weight: 700;
   }
-
-  /* ---- Steppers ---- */
   .stepper-row{
     display:flex; align-items:center; justify-content:space-between;
     padding: 8px 0;
@@ -182,7 +172,6 @@
     font-size: 16px;
     font-variant-numeric: tabular-nums;
   }
-
   .add-btn{
     width:100%;
     margin-top: 12px;
@@ -198,8 +187,6 @@
   }
   .add-btn:active{ transform: scale(0.98); }
   .add-btn:disabled{ opacity: 0.4; }
-
-  /* ---- Big number ---- */
   .big-money{
     font-size: 34px;
     font-weight: 800;
@@ -208,7 +195,6 @@
     color: var(--teal-dark);
   }
   .big-money small{ font-size: 15px; font-weight:600; color: var(--ink-soft); }
-
   .motivation{
     background: linear-gradient(160deg, #FBF0DA, #F6E4C2);
     border: 1px solid #ECD6A8;
@@ -220,7 +206,6 @@
   }
   .motivation .delta-up{ color: #1F6F6B; font-weight: 800; }
   .motivation .delta-down{ color: var(--plum); font-weight: 800; }
-
   .versus{
     display:flex; align-items:center; gap: 10px;
     margin-bottom: 14px;
@@ -237,7 +222,6 @@
   .versus .name{ font-size: 12px; color: var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing: 0.5px;}
   .versus .amt{ font-size: 20px; font-weight:800; margin-top:4px; }
   .versus .vs{ font-size: 12px; color: var(--ink-soft); font-weight:700; }
-
   .entry-list{ margin-bottom: 4px; }
   .entry-item{
     display:flex; justify-content:space-between; align-items:center;
@@ -254,8 +238,6 @@
     font-size: 16px; cursor:pointer; padding: 0 4px;
   }
   .empty-hint{ color: var(--ink-soft); font-size: 13px; text-align:center; padding: 10px 0; }
-
-  /* ---- stats specific ---- */
   .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .chip{
     background: var(--white);
@@ -293,8 +275,6 @@
   }
   .row-between{ display:flex; justify-content:space-between; align-items:baseline; }
   .muted{ color: var(--ink-soft); font-size: 12.5px; }
-
-  /* ---- Date navigator ---- */
   .date-nav{
     display:flex; align-items:center; justify-content:space-between;
     gap: 10px; margin-bottom: 10px;
@@ -329,7 +309,6 @@
   }
   .split-two .col .who{ font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft); font-weight:700; }
   .split-two .col .amt{ font-size:19px; font-weight:800; color:var(--teal-dark); margin-top:3px; }
-
   .footer-note{
     text-align:center;
     font-size: 11.5px;
@@ -337,6 +316,19 @@
     margin-top: 16px;
     line-height:1.5;
     padding: 0 10px;
+  }
+  .sync-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--teal-dark);
+    padding: 6px;
+    margin-bottom: 6px;
+    background: rgba(31,111,107,0.08);
+    border-radius: 12px;
+  }
+  .sync-status.error {
+    color: var(--plum);
+    background: rgba(122,75,99,0.10);
   }
 </style>
 </head>
@@ -352,12 +344,15 @@
     <div class="perforation"><div class="dash"></div></div>
 
     <div class="body">
+      <!-- Статус синхронизации -->
+      <div class="sync-status" id="syncStatus">🔄 Синхронизация...</div>
+
       <div class="tabs">
         <button class="tab-btn active" data-tab="today">Сегодня</button>
         <button class="tab-btn" data-tab="stats">Статистика</button>
       </div>
 
-      <!-- ===================== TAB 1: TODAY ===================== -->
+      <!-- ===== TAB 1: TODAY ===== -->
       <div class="panel active" id="panel-today">
 
         <div class="date-nav">
@@ -367,7 +362,7 @@
         </div>
         <button class="link-btn" id="jumpTodayBtn" style="display:none;">↩ Вернуться к сегодняшнему дню</button>
 
-        <button class="payday-btn" id="resetDayBtn" style="border-color:var(--plum); color:var(--plum); margin-bottom:14px;">🔄 Сбросить этот день и перейти к следующему</button>
+        <button class="payday-btn" id="resetDayBtn" style="border-color:var(--plum); color:var(--plum); margin-bottom:14px;">🔄 Сбросить этот день</button>
 
         <div class="motivation" id="motivationBox">Загрузка…</div>
 
@@ -415,7 +410,7 @@
 
       </div>
 
-      <!-- ===================== TAB 2: STATS ===================== -->
+      <!-- ===== TAB 2: STATS ===== -->
       <div class="panel" id="panel-stats">
 
         <div class="card">
@@ -439,7 +434,7 @@
 
         <div class="card">
           <h3>Резервная копия</h3>
-          <div class="muted" style="margin-bottom:8px;">На всякий случай — скачайте копию данных себе на телефон. Если что-то случится с хранилищем, сможете загрузить её обратно.</div>
+          <div class="muted" style="margin-bottom:8px;">На всякий случай — скачайте копию данных себе на телефон.</div>
           <button class="payday-btn" id="exportBtn">💾 Скачать копию (.json)</button>
           <label class="payday-btn" style="display:block; text-align:center; cursor:pointer;">
             📤 Восстановить из файла
@@ -453,399 +448,306 @@
   </div>
 
   <div class="footer-note">
-    Данные хранятся в общем хранилище — их видит и Нуру, если открывает эту же страницу.<br>
+    Данные сохраняются в облаке Firebase и синхронизируются между устройствами.<br>
     Прогноз зарплаты — приблизительная оценка по вашей истории, не гарантия.
   </div>
 </div>
 
 <script>
-(function(){
-  const S = window.storage;
-  let entries = [];   // {id, person, date, items2, bombers, sum, ts}
-  let paydays = [];   // {date, ts}
-  let counts = { items2: 0, bombers: 0 };
-  let currentPerson = 'me';
-  let selectedDate = null; // set to real today once helpers are defined
+// ================================================================
+// 1. КОНФИГУРАЦИЯ FIREBASE (ТВОИ ДАННЫЕ)
+// ================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyArlDW24o6YzC7BsWM2TeVlmyACIDXB8rw",
+  authDomain: "gaga-c455d.firebaseapp.com",
+  projectId: "gaga-c455d",
+  storageBucket: "gaga-c455d.firebasestorage.app",
+  messagingSenderId: "955893293830",
+  appId: "1:955893293830:web:fdea044c3f14283c81f487",
+  measurementId: "G-DQJY5079HP"
+};
 
-  const PRICE2 = 2, PRICE4 = 4;
-  const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+// ================================================================
+// 2. ПОДКЛЮЧЕНИЕ К FIREBASE
+// ================================================================
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  function todayStr(){
-    const d = new Date();
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  selectedDate = todayStr();
-  function parseYMD(s){
-    const [y,m,d] = s.split('-').map(Number);
-    return new Date(y, m-1, d);
-  }
-  function addDays(dateObj, n){
-    const d = new Date(dateObj);
-    d.setDate(d.getDate()+n);
-    return d;
-  }
-  function toYMD(d){
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  function daysBetween(a,b){ // b - a, in days
-    return Math.round((parseYMD(b) - parseYMD(a)) / 86400000);
-  }
-  function fmt(n){ return Math.round(n).toLocaleString('ru-RU'); }
-  function formatDateLabel(dateStr){
-    const diff = daysBetween(dateStr, todayStr());
-    if(diff === 0) return 'Сегодня';
-    if(diff === 1) return 'Вчера';
-    if(diff === -1) return 'Завтра';
-    const d = parseYMD(dateStr);
-    return d.getDate()+' '+MONTHS[d.getMonth()];
-  }
-  function dayPhrase(dateStr){
-    const label = formatDateLabel(dateStr);
-    return (label==='Сегодня'||label==='Вчера'||label==='Завтра') ? label : ('За '+label);
-  }
+// Включаем офлайн-режим (данные будут доступны даже без интернета)
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  console.warn('Офлайн-режим не включён:', err);
+});
 
-  async function loadAll(){
-    try{
-      const r = await S.get('entries', true);
-      entries = r ? JSON.parse(r.value) : [];
-    }catch(e){ entries = []; }
-    try{
-      const r = await S.get('paydays', true);
-      paydays = r ? JSON.parse(r.value) : [];
-    }catch(e){ paydays = []; }
-  }
-  async function saveEntries(){
-    try{ await S.set('entries', JSON.stringify(entries), true); }catch(e){ console.error(e); }
-  }
-  async function savePaydays(){
-    try{ await S.set('paydays', JSON.stringify(paydays), true); }catch(e){ console.error(e); }
-  }
+// ================================================================
+// 3. КОНСТАНТЫ
+// ================================================================
+const PRICE2 = 2, PRICE4 = 4;
+const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 
-  // ---------- TAB SWITCHING ----------
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-      if(btn.dataset.tab === 'stats') renderStats();
+let entries = [];
+let paydays = [];
+let counts = { items2: 0, bombers: 0 };
+let currentPerson = 'me';
+let selectedDate = null;
+let isSyncing = false;
+let syncTimeout = null;
+
+// ================================================================
+// 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ================================================================
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+selectedDate = todayStr();
+
+function parseYMD(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function addDays(dateObj, n) {
+  const d = new Date(dateObj);
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function toYMD(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function daysBetween(a, b) {
+  return Math.round((parseYMD(b) - parseYMD(a)) / 86400000);
+}
+function fmt(n) { return Math.round(n).toLocaleString('ru-RU'); }
+
+function formatDateLabel(dateStr) {
+  const diff = daysBetween(dateStr, todayStr());
+  if(diff === 0) return 'Сегодня';
+  if(diff === 1) return 'Вчера';
+  if(diff === -1) return 'Завтра';
+  const d = parseYMD(dateStr);
+  return d.getDate()+' '+MONTHS[d.getMonth()];
+}
+function dayPhrase(dateStr) {
+  const label = formatDateLabel(dateStr);
+  return (label==='Сегодня'||label==='Вчера'||label==='Завтра') ? label : ('За '+label);
+}
+
+// ================================================================
+// 5. СИНХРОНИЗАЦИЯ С FIREBASE
+// ================================================================
+const ENTRIES_COLLECTION = 'entries';
+const PAYDAYS_COLLECTION = 'paydays';
+
+function setSyncStatus(text, isError = false) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = text;
+  el.className = 'sync-status' + (isError ? ' error' : '');
+}
+
+// Загрузка всех данных из Firebase
+async function loadFromFirebase() {
+  try {
+    setSyncStatus('🔄 Загрузка данных...');
+    
+    const entriesSnapshot = await db.collection(ENTRIES_COLLECTION).orderBy('ts', 'desc').get();
+    entries = [];
+    entriesSnapshot.forEach(doc => {
+      entries.push({ id: doc.id, ...doc.data() });
     });
-  });
-
-  // ---------- PERSON SWITCH ----------
-  document.getElementById('btnMe').addEventListener('click', ()=>selectPerson('me'));
-  document.getElementById('btnNuru').addEventListener('click', ()=>selectPerson('nuru'));
-  function selectPerson(p){
-    currentPerson = p;
-    document.getElementById('btnMe').classList.toggle('active', p==='me');
-    document.getElementById('btnNuru').classList.toggle('active', p==='nuru');
-  }
-
-  // ---------- DATE NAVIGATION ----------
-  document.getElementById('prevDayBtn').addEventListener('click', ()=>{
-    selectedDate = toYMD(addDays(parseYMD(selectedDate), -1));
-    renderToday();
-  });
-  document.getElementById('nextDayBtn').addEventListener('click', ()=>{
-    selectedDate = toYMD(addDays(parseYMD(selectedDate), 1));
-    renderToday();
-  });
-  document.getElementById('jumpTodayBtn').addEventListener('click', ()=>{
-    selectedDate = todayStr();
-    renderToday();
-  });
-
-  // ---------- STEPPERS ----------
-  document.querySelectorAll('.stepper button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const key = btn.dataset.step;
-      const dir = parseInt(btn.dataset.dir,10);
-      counts[key] = Math.max(0, counts[key] + dir);
-      document.getElementById('cnt-'+key).textContent = counts[key];
-      updateAddBtn();
+    
+    const paydaysSnapshot = await db.collection(PAYDAYS_COLLECTION).orderBy('ts', 'desc').get();
+    paydays = [];
+    paydaysSnapshot.forEach(doc => {
+      paydays.push({ id: doc.id, ...doc.data() });
     });
+    
+    setSyncStatus('✅ Данные загружены');
+    return true;
+  } catch (e) {
+    console.error('Ошибка загрузки:', e);
+    setSyncStatus('❌ Ошибка загрузки: ' + e.message, true);
+    return false;
+  }
+}
+
+// Сохранение записи в Firebase
+async function saveEntryToFirebase(entry) {
+  try {
+    await db.collection(ENTRIES_COLLECTION).doc(entry.id).set(entry);
+    return true;
+  } catch (e) {
+    console.error('Ошибка сохранения:', e);
+    return false;
+  }
+}
+
+// Удаление записи из Firebase
+async function deleteEntryFromFirebase(id) {
+  try {
+    await db.collection(ENTRIES_COLLECTION).doc(id).delete();
+    return true;
+  } catch (e) {
+    console.error('Ошибка удаления:', e);
+    return false;
+  }
+}
+
+// Сохранение зарплаты в Firebase
+async function savePaydayToFirebase(payday) {
+  try {
+    await db.collection(PAYDAYS_COLLECTION).doc(payday.id).set(payday);
+    return true;
+  } catch (e) {
+    console.error('Ошибка сохранения зарплаты:', e);
+    return false;
+  }
+}
+
+// ================================================================
+// 6. ОСНОВНЫЕ ФУНКЦИИ
+// ================================================================
+function updateAddBtn() {
+  const sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
+  const btn = document.getElementById('addBtn');
+  btn.textContent = 'Добавить запись — ' + fmt(sum) + ' сом';
+  btn.disabled = sum === 0;
+}
+
+function sumFor(person, date) {
+  return entries.filter(e => (person ? e.person === person : true) && e.date === date)
+                .reduce((a,e) => a + e.sum, 0);
+}
+
+function allDatesSorted() {
+  return [...new Set(entries.map(e => e.date))].sort();
+}
+
+function periodSum(p, person) {
+  return entries.filter(e => e.date >= p.start && e.date <= p.end && (person ? e.person === person : true))
+                .reduce((a,e) => a + e.sum, 0);
+}
+
+function computePeriodsData() {
+  const sortedPaydays = [...paydays].sort((a,b) => a.date.localeCompare(b.date));
+  const allDates = allDatesSorted();
+  const trackingStart = allDates[0] || todayStr();
+  const boundaries = sortedPaydays.map(p => p.date);
+  const periods = [];
+  let cursor = trackingStart;
+  boundaries.forEach(b => {
+    periods.push({start: cursor, end: b, completed: true});
+    cursor = toYMD(addDays(parseYMD(b), 1));
   });
-  function updateAddBtn(){
-    const sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
-    const btn = document.getElementById('addBtn');
-    btn.textContent = 'Добавить запись — ' + fmt(sum) + ' сом';
-    btn.disabled = sum === 0;
+  const todayD = todayStr();
+  if (daysBetween(cursor, todayD) >= 0) {
+    periods.push({start: cursor, end: todayD, completed: false});
+  }
+  const current = periods.length ? periods[periods.length-1] : null;
+  return { sortedPaydays, periods, current, trackingStart };
+}
+
+// ================================================================
+// 7. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+// ================================================================
+function renderToday() {
+  const day = selectedDate;
+  const realToday = todayStr();
+
+  document.getElementById('dateLabel').textContent = formatDateLabel(day);
+  document.getElementById('jumpTodayBtn').style.display = (day === realToday) ? 'none' : 'block';
+  document.getElementById('entryListTitle').textContent = 'Записи — ' + formatDateLabel(day).toLowerCase();
+  document.getElementById('splitTitle').textContent = 'Заработано ' + (formatDateLabel(day)==='Сегодня' ? 'сегодня' : formatDateLabel(day)==='Вчера' ? 'вчера' : ('за ' + formatDateLabel(day))) + ' — отдельно';
+
+  const dates = allDatesSorted();
+  const earlierDates = dates.filter(d => d < day);
+  const prevDate = earlierDates.length ? earlierDates[earlierDates.length-1] : null;
+
+  const totalDay = sumFor(null, day);
+  const totalPrev = prevDate ? sumFor(null, prevDate) : 0;
+
+  const motBox = document.getElementById('motivationBox');
+  if (totalDay === 0 && !prevDate) {
+    motBox.innerHTML = '👋 Добавьте первую запись — отсюда начнётся история заработка.';
+  } else if (!prevDate) {
+    motBox.innerHTML = '🔥 '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b>. Это первая запись в истории — задайте планку!';
+  } else {
+    const diff = totalDay - totalPrev;
+    if (diff > 0) {
+      motBox.innerHTML = '🚀 '+dayPhrase(day)+' заработано <span class="delta-up">'+fmt(totalDay)+' сом</span> — это на <span class="delta-up">'+fmt(diff)+' сом</span> больше, чем в прошлый рабочий день ('+fmt(totalPrev)+' сом). Так держать!';
+    } else if (diff < 0) {
+      motBox.innerHTML = '💪 '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b>, это на <span class="delta-down">'+fmt(-diff)+' сом</span> меньше прошлого рабочего дня ('+fmt(totalPrev)+' сом). Ещё есть время наверстать!';
+    } else {
+      motBox.innerHTML = '⚖️ '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b> — ровно как и в прошлый рабочий день.';
+    }
   }
 
-  document.getElementById('addBtn').addEventListener('click', async ()=>{
-    const sum = counts.items2*PRICE2 + counts.bombers*PRICE4;
-    if(sum === 0) return;
-    entries.push({
-      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
-      person: currentPerson,
-      date: selectedDate,
-      items2: counts.items2,
-      bombers: counts.bombers,
-      sum: sum,
-      ts: Date.now()
+  const meDay = sumFor('me', day);
+  const nuruDay = sumFor('nuru', day);
+  document.getElementById('splitDayBox').innerHTML =
+    '<div class="col"><div class="who">Я</div><div class="amt">'+fmt(meDay)+' сом</div></div>'+
+    '<div class="col"><div class="who">Нуру</div><div class="amt">'+fmt(nuruDay)+' сом</div></div>';
+
+  const { current } = computePeriodsData();
+  const untilPayday = current ? periodSum(current) : 0;
+  const meP = current ? periodSum(current,'me') : 0;
+  const nuruP = current ? periodSum(current,'nuru') : 0;
+  document.getElementById('summaryBox').innerHTML =
+    '<div class="row-between"><span>Всего с '+(current?current.start:day)+'</span><b>'+fmt(untilPayday)+' сом</b></div>'+
+    '<div class="split-two" style="margin-top:8px;">'+
+      '<div class="col"><div class="who">Я</div><div class="amt">'+fmt(meP)+' сом</div></div>'+
+      '<div class="col"><div class="who">Нуру</div><div class="amt">'+fmt(nuruP)+' сом</div></div>'+
+    '</div>'+
+    '<div class="muted" style="margin-top:8px;">Дата следующей зарплаты неизвестна — прогноз смотрите во вкладке «Статистика».</div>';
+
+  const list = document.getElementById('entryList');
+  const dayEntries = entries.filter(e => e.date === day).sort((a,b) => b.ts - a.ts);
+  if (dayEntries.length === 0) {
+    list.innerHTML = '<div class="empty-hint">Записей ещё нет</div>';
+  } else {
+    list.innerHTML = dayEntries.map(e => {
+      const parts = [];
+      if (e.items2) parts.push(e.items2+'× вещь (2 сом)');
+      if (e.bombers) parts.push(e.bombers+'× бомбер (4 сом)');
+      const who = e.person === 'me' ? 'Я' : 'Нуру';
+      return '<div class="entry-item">'+
+        '<div><span class="who">'+who+'</span> <span class="desc">— '+parts.join(', ')+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:6px;"><span class="sum">'+fmt(e.sum)+' сом</span>'+
+        '<button class="del" data-id="'+e.id+'">×</button></div>'+
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.del').forEach(b => {
+      b.addEventListener('click', () => deleteEntry(b.dataset.id));
     });
-    counts = {items2:0, bombers:0};
-    document.getElementById('cnt-items2').textContent = 0;
-    document.getElementById('cnt-bombers').textContent = 0;
-    updateAddBtn();
-    await saveEntries();
-    renderToday();
-  });
+  }
+}
 
-  async function deleteEntry(id){
-    entries = entries.filter(e=>e.id !== id);
-    await saveEntries();
-    renderToday();
-    renderStats();
+function renderStats() {
+  const sortedPaydays = [...paydays].sort((a,b) => a.date.localeCompare(b.date));
+  const intervals = [];
+  for (let i = 1; i < sortedPaydays.length; i++) {
+    intervals.push(daysBetween(sortedPaydays[i-1].date, sortedPaydays[i].date));
+  }
+  const chips = document.getElementById('paydayChips');
+  chips.innerHTML = intervals.map(d => '<div class="chip">'+d+' дн.</div>').join('') || '';
+
+  const info = document.getElementById('paydayInfo');
+  const allDates = allDatesSorted();
+  const trackingStart = allDates[0] || todayStr();
+  const lastPayday = sortedPaydays.length ? sortedPaydays[sortedPaydays.length-1].date : null;
+  const cycleStart = lastPayday || trackingStart;
+  const daysSince = daysBetween(cycleStart, todayStr());
+
+  if (intervals.length === 0) {
+    info.innerHTML = 'Пока недостаточно данных для прогноза. Отметьте зарплату хотя бы дважды, чтобы узнать средний срок.<br>Сегодня день <b>'+(daysSince+1)+'</b> с начала текущего периода.';
+  } else {
+    const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const minI = Math.min(...intervals), maxI = Math.max(...intervals);
+    let prob;
+    if (daysSince < minI) prob = 5;
+    else if (daysSince > maxI) prob = 97;
+    else prob = Math.round(((daysSince - minI + 1) / (maxI - minI + 1)) * 90) + 5;
+    info.innerHTML = 'Обычно зарплата приходит через <b>~'+Math.round(avg)+' дней</b> (от '+minI+' до '+maxI+').<br>'+
+      'Сегодня день <b>'+(daysSince+1)+'</b> с последней зарплаты.<br>'+
+      'Оценочная вероятность, что зарплата скоро: <b>'+prob+'%</b>';
   }
 
-  document.getElementById('resetDayBtn').addEventListener('click', async ()=>{
-    const day = selectedDate;
-    const hasEntries = entries.some(e=>e.date===day);
-    if(hasEntries){
-      if(!confirm('Удалить все записи за '+formatDateLabel(day)+'? Это нельзя отменить.')) return;
-      entries = entries.filter(e=>e.date !== day);
-      await saveEntries();
-    }
-    selectedDate = toYMD(addDays(parseYMD(day),1));
-    renderToday();
-    renderStats();
-  });
-
-  // ---------- SHARED: period calculation (used by Today summary + Stats) ----------
-  function computePeriodsData(){
-    const sortedPaydays = [...paydays].sort((a,b)=>a.date.localeCompare(b.date));
-    const allDates = allDatesSorted();
-    const trackingStart = allDates[0] || todayStr();
-    const boundaries = sortedPaydays.map(p=>p.date);
-    const periods = [];
-    let cursor = trackingStart;
-    boundaries.forEach(b=>{
-      periods.push({start: cursor, end: b, completed: true});
-      cursor = toYMD(addDays(parseYMD(b),1));
-    });
-    const todayD = todayStr();
-    if(daysBetween(cursor, todayD) >= 0){
-      periods.push({start: cursor, end: todayD, completed: false});
-    }
-    const current = periods.length ? periods[periods.length-1] : null;
-    return { sortedPaydays, periods, current, trackingStart };
-  }
-  function periodSum(p, person){
-    return entries.filter(e=> e.date >= p.start && e.date <= p.end && (person ? e.person===person : true))
-                  .reduce((a,e)=>a+e.sum,0);
-  }
-
-  // ---------- RENDER: TODAY ----------
-  function sumFor(person, date){
-    return entries.filter(e=> (person? e.person===person : true) && e.date===date)
-                  .reduce((a,e)=>a+e.sum,0);
-  }
-  function allDatesSorted(){
-    return [...new Set(entries.map(e=>e.date))].sort();
-  }
-
-  function renderToday(){
-    const day = selectedDate;
-    const realToday = todayStr();
-
-    document.getElementById('dateLabel').textContent = formatDateLabel(day);
-    document.getElementById('jumpTodayBtn').style.display = (day === realToday) ? 'none' : 'block';
-    document.getElementById('entryListTitle').textContent = 'Записи — ' + formatDateLabel(day).toLowerCase();
-    document.getElementById('splitTitle').textContent = 'Заработано ' + (formatDateLabel(day)==='Сегодня' ? 'сегодня' : formatDateLabel(day)==='Вчера' ? 'вчера' : ('за ' + formatDateLabel(day))) + ' — отдельно';
-
-    const dates = allDatesSorted();
-    const earlierDates = dates.filter(d=>d<day);
-    const prevDate = earlierDates.length ? earlierDates[earlierDates.length-1] : null;
-
-    const totalDay = sumFor(null, day);
-    const totalPrev = prevDate ? sumFor(null, prevDate) : 0;
-
-    const motBox = document.getElementById('motivationBox');
-    if(totalDay === 0 && !prevDate){
-      motBox.innerHTML = '👋 Добавьте первую запись — отсюда начнётся история заработка.';
-    } else if(!prevDate){
-      motBox.innerHTML = '🔥 '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b>. Это первая запись в истории — задайте планку!';
-    } else {
-      const diff = totalDay - totalPrev;
-      if(diff > 0){
-        motBox.innerHTML = '🚀 '+dayPhrase(day)+' заработано <span class="delta-up">'+fmt(totalDay)+' сом</span> — это на <span class="delta-up">'+fmt(diff)+' сом</span> больше, чем в прошлый рабочий день ('+fmt(totalPrev)+' сом). Так держать!';
-      } else if(diff < 0){
-        motBox.innerHTML = '💪 '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b>, это на <span class="delta-down">'+fmt(-diff)+' сом</span> меньше прошлого рабочего дня ('+fmt(totalPrev)+' сом). Ещё есть время наверстать!';
-      } else {
-        motBox.innerHTML = '⚖️ '+dayPhrase(day)+' заработано <b>'+fmt(totalDay)+' сом</b> — ровно как и в прошлый рабочий день.';
-      }
-    }
-
-    // split earnings by person, for the selected day
-    const meDay = sumFor('me', day);
-    const nuruDay = sumFor('nuru', day);
-    document.getElementById('splitDayBox').innerHTML =
-      '<div class="col"><div class="who">Я</div><div class="amt">'+fmt(meDay)+' сом</div></div>'+
-      '<div class="col"><div class="who">Нуру</div><div class="amt">'+fmt(nuruDay)+' сом</div></div>';
-
-    // summary: running total since last payday (date of next payday is unknown — see Stats tab)
-    const { current } = computePeriodsData();
-    const untilPayday = current ? periodSum(current) : 0;
-    const meP = current ? periodSum(current,'me') : 0;
-    const nuruP = current ? periodSum(current,'nuru') : 0;
-    document.getElementById('summaryBox').innerHTML =
-      '<div class="row-between"><span>Всего с '+(current?current.start:day)+'</span><b>'+fmt(untilPayday)+' сом</b></div>'+
-      '<div class="split-two" style="margin-top:8px;">'+
-        '<div class="col"><div class="who">Я</div><div class="amt">'+fmt(meP)+' сом</div></div>'+
-        '<div class="col"><div class="who">Нуру</div><div class="amt">'+fmt(nuruP)+' сом</div></div>'+
-      '</div>'+
-      '<div class="muted" style="margin-top:8px;">Дата следующей зарплаты неизвестна — прогноз смотрите во вкладке «Статистика».</div>';
-
-    // entries list for the selected day
-    const list = document.getElementById('entryList');
-    const dayEntries = entries.filter(e=>e.date===day).sort((a,b)=>b.ts-a.ts);
-    if(dayEntries.length===0){
-      list.innerHTML = '<div class="empty-hint">Записей ещё нет</div>';
-    } else {
-      list.innerHTML = dayEntries.map(e=>{
-        const parts = [];
-        if(e.items2) parts.push(e.items2+'× вещь (2 сом)');
-        if(e.bombers) parts.push(e.bombers+'× бомбер (4 сом)');
-        const who = e.person==='me' ? 'Я' : 'Нуру';
-        return '<div class="entry-item">'+
-          '<div><span class="who">'+who+'</span> <span class="desc">— '+parts.join(', ')+'</span></div>'+
-          '<div style="display:flex;align-items:center;gap:6px;"><span class="sum">'+fmt(e.sum)+' сом</span>'+
-          '<button class="del" data-id="'+e.id+'">×</button></div>'+
-        '</div>';
-      }).join('');
-      list.querySelectorAll('.del').forEach(b=>{
-        b.addEventListener('click', ()=>deleteEntry(b.dataset.id));
-      });
-    }
-  }
-
-  // ---------- RENDER: STATS ----------
-  function renderStats(){
-    // payday prediction
-    const sortedPaydays = [...paydays].sort((a,b)=>a.date.localeCompare(b.date));
-    const intervals = [];
-    for(let i=1;i<sortedPaydays.length;i++){
-      intervals.push(daysBetween(sortedPaydays[i-1].date, sortedPaydays[i].date));
-    }
-    const chips = document.getElementById('paydayChips');
-    chips.innerHTML = intervals.map(d=>'<div class="chip">'+d+' дн.</div>').join('') || '';
-
-    const info = document.getElementById('paydayInfo');
-    const allDates = allDatesSorted();
-    const trackingStart = allDates[0] || todayStr();
-    const lastPayday = sortedPaydays.length ? sortedPaydays[sortedPaydays.length-1].date : null;
-    const cycleStart = lastPayday || trackingStart;
-    const daysSince = daysBetween(cycleStart, todayStr());
-
-    if(intervals.length === 0){
-      info.innerHTML = 'Пока недостаточно данных для прогноза. Отметьте зарплату хотя бы дважды, чтобы узнать средний срок.<br>Сегодня день <b>'+(daysSince+1)+'</b> с начала текущего периода.';
-    } else {
-      const avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
-      const minI = Math.min(...intervals), maxI = Math.max(...intervals);
-      let prob;
-      if(daysSince < minI) prob = 5;
-      else if(daysSince > maxI) prob = 97;
-      else prob = Math.round(((daysSince-minI+1)/(maxI-minI+1))*90)+5;
-
-      info.innerHTML = 'Обычно зарплата приходит через <b>~'+Math.round(avg)+' дней</b> (от '+minI+' до '+maxI+').<br>'+
-        'Сегодня день <b>'+(daysSince+1)+'</b> с последней зарплаты.<br>'+
-        'Оценочная вероятность, что зарплата скоро: <b>'+prob+'%</b>';
-    }
-
-    // period record
-    const { periods, current } = computePeriodsData();
-    const completedSums = periods.filter(p=>p.completed).map(p=>periodSum(p));
-    const record = completedSums.length ? Math.max(...completedSums) : 0;
-    const currentSum = current ? periodSum(current) : 0;
-
-    const recInfo = document.getElementById('recordInfo');
-    const recBar = document.getElementById('recordBar');
-    if(completedSums.length === 0){
-      recInfo.innerHTML = 'Текущий период (с '+ (current?current.start:trackingStart) +'): <b>'+fmt(currentSum)+' сом</b>. Рекорд появится после первой отмеченной зарплаты.';
-      recBar.style.width = '0%';
-    } else {
-      const pct = record>0 ? Math.min(100, Math.round(currentSum/record*100)) : 0;
-      let extra = '';
-      if(currentSum > record) extra = ' 🏆 Новый рекорд!';
-      const meP = current ? periodSum(current,'me') : 0;
-      const nuruP = current ? periodSum(current,'nuru') : 0;
-      recInfo.innerHTML = 'Рекорд периода: <b>'+fmt(record)+' сом</b>.<br>Текущий период: <b>'+fmt(currentSum)+' сом</b> ('+pct+'% от рекорда)'+extra+
-        '<br><span class="muted">Я: '+fmt(meP)+' сом · Нуру: '+fmt(nuruP)+' сом</span>';
-      recBar.style.width = pct+'%';
-    }
-
-    // all-time totals
-    const meAll = entries.filter(e=>e.person==='me').reduce((a,e)=>a+e.sum,0);
-    const nuruAll = entries.filter(e=>e.person==='nuru').reduce((a,e)=>a+e.sum,0);
-    const maxAll = Math.max(meAll, nuruAll, 1);
-    document.getElementById('allTimeBox').innerHTML =
-      '<div class="row-between"><span>Я</span><b>'+fmt(meAll)+' сом</b></div>'+
-      '<div class="progress-outer"><div class="progress-inner" style="width:'+(meAll/maxAll*100)+'%"></div></div>'+
-      '<div class="row-between" style="margin-top:10px;"><span>Нуру</span><b>'+fmt(nuruAll)+' сом</b></div>'+
-      '<div class="progress-outer"><div class="progress-inner" style="width:'+(nuruAll/maxAll*100)+'%"></div></div>';
-  }
-
-  document.getElementById('markPaydayBtn').addEventListener('click', async ()=>{
-    const today = todayStr();
-    if(paydays.some(p=>p.date===today)){
-      renderStats();
-      return;
-    }
-    paydays.push({date: today, ts: Date.now()});
-    await savePaydays();
-    renderStats();
-  });
-
-  // ---------- BACKUP: export / import ----------
-  document.getElementById('exportBtn').addEventListener('click', ()=>{
-    const payload = { entries, paydays, exportedAt: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'zarabotok-backup-'+todayStr()+'.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  });
-
-  document.getElementById('importInput').addEventListener('change', (ev)=>{
-    const file = ev.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async ()=>{
-      try{
-        const data = JSON.parse(reader.result);
-        if(!Array.isArray(data.entries) || !Array.isArray(data.paydays)){
-          alert('Файл не похож на резервную копию этого трекера.');
-          return;
-        }
-        if(!confirm('Заменить текущие данные содержимым файла? Текущие записи будут перезаписаны.')) return;
-        entries = data.entries;
-        paydays = data.paydays;
-        await saveEntries();
-        await savePaydays();
-        renderToday();
-        renderStats();
-        alert('Данные восстановлены.');
-      }catch(e){
-        alert('Не получилось прочитать файл: ' + e.message);
-      }
-      ev.target.value = '';
-    };
-    reader.readAsText(file);
-  });
-
-  // ---------- INIT ----------
-  (async function init(){
-    await loadAll();
-    updateAddBtn();
-    renderToday();
-    renderStats();
-  })();
-})();
-</script>
-</body>
-</html>
+  const { periods, current
